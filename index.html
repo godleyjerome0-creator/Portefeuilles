@@ -8,6 +8,10 @@
 <meta name="theme-color" content="#060a14">
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="icon" href="icon.png">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
 <style>
 :root{--bg:#eef3fb;--cd:#fff;--tx:#0f1b33;--mu:#6f7f98;--pr:#2563eb;--in:#10a55a;--out:#e5484d;--bd:#e3e9f3;--sh:0 4px 18px rgba(30,60,120,.08);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#060a14;--cd:#0d1525;--tx:#e6f0ff;--mu:#7f93b5;--pr:#3b9cff;--in:#2ee6a6;--out:#ff5c7a;--bd:#1a2b48;--sh:0 0 0 1px rgba(59,156,255,.05),0 10px 30px rgba(0,0,0,.5)}}
@@ -36,19 +40,23 @@ nav button{flex:1;border:0;background:none;color:var(--mu);font-size:11px;paddin
 nav button.a{color:var(--pr);text-shadow:0 0 12px var(--pr)}nav b{display:block;font-size:20px;font-weight:400}
 nav .p b{background:linear-gradient(135deg,var(--pr),#6366f1);box-shadow:0 0 18px rgba(99,102,241,.6);color:#fff;border-radius:50%;width:44px;height:44px;line-height:44px;margin:-18px auto 0;font-size:28px}
 #toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#14213d;color:#fff;padding:10px 16px;border-radius:20px;opacity:0;transition:.3s;pointer-events:none;z-index:100;font-size:14px}
+#auth{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;z-index:98;overflow:auto;padding:20px}
 #lock{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;z-index:99}
 </style></head>
 <body>
-<div id="app"></div><nav id="nav"></nav><div id="lock"></div><div id="toast"></div>
+<div id="app"></div><nav id="nav"></nav><div id="lock"></div><div id="auth"></div><div id="toast"></div>
 <script>
-const $=s=>document.querySelector(s),p2=n=>String(n).padStart(2,'0'),K='mp_v1',CUR=['HTG','USD'];
+let K='mp_v1';
+const $=s=>document.querySelector(s),p2=n=>String(n).padStart(2,'0'),CUR=['HTG','USD'];
 const td=(d=new Date())=>d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());
 let S={tx:[],cin:['Père','Mère','Famille','Travail','Client','Autre'],cout:['Nourriture','Transport','Internet','Téléphone','École','Loyer','Santé','Autre'],bud:[],goal:null,rate:0,pin:'',theme:'auto',lb:0};
+const S0=JSON.stringify(S),DEF=()=>JSON.parse(S0);
 try{const r=localStorage.getItem(K);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
-let DB=null,CS='off',ct;
-const cst=()=>'📱 Données gardées sur ton téléphone · fais une sauvegarde de temps en temps (Paramètres)';
+let U=null,FS=null,CS='off',ct;
+const cst=()=>U?(CS=='err'?'⚠️ Synchronisation impossible pour le moment (données gardées sur le téléphone)':'☁️ '+(U.email||'Compte connecté')+' · synchronisé'):'📱 Données gardées sur ton téléphone · fais une sauvegarde de temps en temps (Paramètres)';
 const upd=()=>{const e=$('#cs');if(e)e.textContent=cst()};
-function push(){if(!DB)return;clearTimeout(ct);ct=setTimeout(async()=>{try{await DB.set({json:JSON.stringify({...S,pin:''}),t:S.ut});CS='ok'}catch(e){CS='err'}upd()},1200)}
+const snap=()=>({json:JSON.stringify({...S,pin:''}),t:S.ut||0});
+function push(){if(!U)return;clearTimeout(ct);ct=setTimeout(async()=>{try{await FS.doc('users/'+U.uid).set(snap());CS='ok'}catch(e){CS='err'}upd()},1000)}
 const save=nc=>{if(!nc)S.ut=Date.now();try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}if(!nc)push()};
 const E=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 const F=(n,c)=>(+n).toLocaleString('fr-FR',{maximumFractionDigits:2})+' '+c;
@@ -131,7 +139,7 @@ function vSt(){
 
 function vSet(){
  const g=S.goal||{};
- return `<h1>Paramètres</h1><div class="c mu" id="cs">${cst()}</div>
+ return `<h1>Paramètres</h1><div class="c"><div class="mu" id="cs">${cst()}</div>${U?'<button class="b s" onclick="lo()" style="margin:10px 0 0">Se déconnecter</button>':''}</div>
  <div class="c"><b>Apparence</b><select onchange="S.theme=this.value;save();applyTheme()">${O([['auto','Automatique'],['light','Clair'],['dark','Sombre']],S.theme)}</select></div>
  <div class="c"><b>Conversion (facultatif)</b><div class="mu">1 USD = ? HTG (taux que tu choisis)</div><input type="number" inputmode="decimal" value="${S.rate||''}" placeholder="Ex. 130" onchange="S.rate=+this.value;save();toast('Taux enregistré')"></div>
  <div class="c"><b>Ajouter une catégorie</b><select id="nt"><option value="out">Dépense</option><option value="in">Revenu</option></select><input id="nn" placeholder="Nom"><button class="b s" onclick="ac()">Ajouter</button></div>
@@ -159,8 +167,34 @@ function R(){
 function lk(){const l=$('#lock');if(!S.pin){l.style.display='none';return}l.style.display='flex';l.innerHTML='<div class="c" style="width:280px;text-align:center"><h1>🔒 Mon Portefeuille</h1><input id="pi" type="password" inputmode="numeric" placeholder="Code PIN" style="text-align:center"><button class="b" onclick="ul()">Ouvrir</button></div>'}
 function ul(){if(hs($('#pi').value)==S.pin)$('#lock').style.display='none';else{toast('Code incorrect');$('#pi').value=''}}
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&S.pin)lk()});
+const fbOn=()=>typeof firebase!=='undefined'&&window.FB&&FB.apiKey&&!/^COLLE/.test(FB.apiKey);
+const A=h=>{const a=$('#auth');a.innerHTML='<div class="c" style="width:min(340px,100%)">'+h+'</div>';a.style.display='flex'};
+const hideAuth=()=>{$('#auth').style.display='none'};
+const am=t=>{const e=$('#am');if(e)e.textContent=t};
+function showAuth(){A(`<h1>🔐 Mon Portefeuille</h1><div class="mu" id="am" style="margin-bottom:10px">Connecte-toi pour retrouver tes données sur tous tes appareils.</div><input id="ae" type="email" placeholder="E-mail" autocomplete="email"><input id="ap" type="password" placeholder="Mot de passe (6 caractères min.)" autocomplete="current-password"><button class="b" onclick="em(0)">Se connecter</button><button class="b s" onclick="em(1)">Créer un compte</button><button class="b s" onclick="gg()">Continuer avec Google</button><button class="b s" onclick="rp()">Mot de passe oublié</button>`)}
+const FE=e=>({'auth/invalid-credential':'E-mail ou mot de passe incorrect','auth/invalid-email':'E-mail invalide','auth/missing-password':'Entre ton mot de passe','auth/email-already-in-use':'Ce compte existe déjà : connecte-toi','auth/weak-password':'Mot de passe trop court (6 min.)','auth/network-request-failed':'Pas de connexion internet','auth/popup-closed-by-user':'Connexion annulée','auth/unauthorized-domain':'Domaine non autorisé dans Firebase'}[e.code]||'Erreur : '+(e.code||e.message));
+async function em(c){const e=$('#ae').value.trim(),p=$('#ap').value;try{c?await firebase.auth().createUserWithEmailAndPassword(e,p):await firebase.auth().signInWithEmailAndPassword(e,p)}catch(x){am(FE(x))}}
+async function gg(){try{await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider())}catch(x){am(FE(x))}}
+async function rp(){const e=$('#ae').value.trim();if(!e)return am('Entre ton e-mail puis touche « Mot de passe oublié »');try{await firebase.auth().sendPasswordResetEmail(e);am('E-mail de réinitialisation envoyé')}catch(x){am(FE(x))}}
+async function lo(){if(U&&S.ut){try{await FS.doc('users/'+U.uid).set(snap())}catch(e){return toast('Synchronisation impossible : reste connecté')}}try{localStorage.removeItem(K)}catch(e){}try{await firebase.auth().signOut()}catch(e){}}
+const legacy=()=>{try{return JSON.parse(localStorage.getItem('mp_v1'))}catch(e){return null}};
+const askImport=n=>new Promise(r=>{window.imp=r;A(`<h1>📥 Données trouvées</h1><div class="mu" style="margin-bottom:10px">Cet appareil contient ${n} transaction(s). Les importer dans ce compte ?</div><button class="b" onclick="imp(1)">Oui, importer</button><button class="b s" onclick="imp(0)">Non, commencer à zéro</button>`)});
+async function onUser(u){
+ if(!u){U=null;K='mp_v1';S=DEF();showAuth();return}
+ U=u;K='mp_u_'+u.uid;S=DEF();S.theme='dark';S.tv=1;
+ try{const r=localStorage.getItem(K);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+ try{
+  const sn=await FS.doc('users/'+u.uid).get(),r=sn.exists?sn.data():null;
+  if(r&&r.t>(S.ut||0)){S=Object.assign(DEF(),JSON.parse(r.json),{pin:S.pin,ut:r.t});save(1)}
+  else if(r){push()}
+  else{const old=legacy();
+   if(old&&old.tx&&old.tx.length&&!S.tx.length&&await askImport(old.tx.length)){S=Object.assign(DEF(),old);S.tv=1;try{localStorage.removeItem('mp_v1')}catch(e){}save()}
+   else if(S.tx.length)push();else save()}
+  CS='ok'}catch(e){CS='err'}
+ hideAuth();applyTheme();R();lk();upd()}
 if(!S.tv){S.theme='dark';S.tv=1;save(1)}
-applyTheme();R();lk();
+applyTheme();
+if(fbOn()){$('#app').innerHTML='<h1 style="text-align:center;margin-top:30vh">⏳</h1>';firebase.initializeApp(FB);FS=firebase.firestore();firebase.auth().onAuthStateChanged(onUser)}else{R();lk()}
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 </script>
