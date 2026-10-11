@@ -96,7 +96,7 @@ nav .p b{background:linear-gradient(135deg,#2563eb,#7c3aed);box-shadow:0 6px 18p
 #bg{position:fixed;inset:0;z-index:-1;opacity:.3;pointer-events:none}#bg svg{display:block}
 @media(prefers-color-scheme:light){:root:not([data-theme="dark"]) #bg{display:none}}
 :root[data-theme="light"] #bg{display:none}
-#auth{background:#fff}
+#auth{background:var(--bg)}
 .lw2{width:100%;max-width:480px;margin:0 auto}
 .lg-top{position:relative;overflow:hidden;border-radius:0 0 30px 30px;background:linear-gradient(135deg,#0ea5e9,#2563eb 52%,#7c3aed);padding:calc(24px + env(safe-area-inset-top,0px)) 24px 18px;color:#fff;text-align:left}
 .lg-top .bgs{position:absolute;inset:0;opacity:.5}.lg-top .bgs svg{display:block}
@@ -104,19 +104,19 @@ nav .p b{background:linear-gradient(135deg,#2563eb,#7c3aed);box-shadow:0 6px 18p
 .bn{display:flex;align-items:center;gap:10px;font:700 26px "Space Grotesk",Inter,sans-serif}
 .tg2{opacity:.92;font-size:14px;margin:6px 0 0}
 .lg-top svg.fl{display:block;margin:4px auto 0}
-.lp{--tx:#0f1b33;--mu:#64748b;--bd:#e2e8f0;--gl:#fff;padding:24px 22px 34px;color:#0f1b33;text-align:left}
-.wb{font:700 26px "Space Grotesk",Inter,sans-serif;margin:0 0 4px;color:#0f1b33;text-transform:none;letter-spacing:-.3px}
-.fi{display:flex;align-items:center;gap:10px;border:1px solid #e2e8f0;background:#f8fafc;border-radius:14px;padding:0 14px;margin:10px 0}
-.fi input{border:0;background:transparent;margin:0;padding:15px 0;color:#0f1b33;outline:0;border-radius:0}
+.lp{padding:24px 22px 34px;color:var(--tx);text-align:left}
+.wb{font:700 26px "Space Grotesk",Inter,sans-serif;margin:0 0 4px;color:var(--tx);text-transform:none;letter-spacing:-.3px}
+.fi{display:flex;align-items:center;gap:10px;border:1px solid var(--bd);background:rgba(127,140,165,.1);border-radius:14px;padding:0 14px;margin:10px 0}
+.fi input{border:0;background:transparent;margin:0;padding:15px 0;color:var(--tx);outline:0;border-radius:0}
 .fi svg{width:20px;height:20px;stroke:#94a3b8;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .eye{display:flex;cursor:pointer}
-.rw{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#64748b;margin:6px 0 16px}
+.rw{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--mu);margin:6px 0 16px}
 .rw label{display:flex;align-items:center;gap:8px}.rw input{width:18px;height:18px;margin:0;accent-color:#2563eb}
-.rw a,.su a{color:#2563eb;font-weight:600;text-decoration:none}
+.rw a,.su a{color:var(--pr);font-weight:600;text-decoration:none}
 .lb{border-radius:99px;padding:16px;font-size:16px}
-.or{text-align:center;color:#64748b;font-size:13px;margin:16px 0 12px}
-.gb{background:#fff !important;color:#0f1b33 !important;border:1px solid #e2e8f0 !important;display:flex;align-items:center;justify-content:center;gap:10px;border-radius:99px;box-shadow:none}
-.su{text-align:center;margin-top:18px;color:#64748b;font-size:14px}
+.or{text-align:center;color:var(--mu);font-size:13px;margin:16px 0 12px}
+.gb{background:var(--gl) !important;color:var(--tx) !important;border:1px solid var(--bd) !important;display:flex;align-items:center;justify-content:center;gap:10px;border-radius:99px;box-shadow:none}
+.su{text-align:center;margin-top:18px;color:var(--mu);font-size:14px}
 </style></head>
 <body>
 <div id="app"></div><nav id="nav"></nav><div id="lock"></div><div id="auth"></div><div id="bg"></div><div id="toast"></div>
@@ -144,7 +144,7 @@ let dt=null,tab='home',fl={p:'month',t:'',c:'',cur:'',q:''},fm={type:'out'},sp='
 function inP(d,p){if(p=='all')return 1;const t=td();if(p=='day')return d==t;if(p=='month')return d.slice(0,7)==t.slice(0,7);const x=new Date();x.setDate(x.getDate()-6);return d>=td(x)&&d<=t}
 const sum=(l,ty,c)=>l.filter(t=>t.type==ty&&t.cur==c&&!t.vd).reduce((a,t)=>a+t.amt,0);
 const bal=c=>sum(S.tx,'in',c)-sum(S.tx,'out',c);
-function applyTheme(){const r=document.documentElement;S.theme=='auto'?r.removeAttribute('data-theme'):r.setAttribute('data-theme',S.theme)}
+function applyTheme(){try{localStorage.setItem('mp_theme',S.theme)}catch(e){}const r=document.documentElement;S.theme=='auto'?r.removeAttribute('data-theme'):r.setAttribute('data-theme',S.theme)}
 function toast(m){const t=$('#toast');t.textContent=m;t.style.opacity=1;setTimeout(()=>t.style.opacity=0,2400)}
 function go(t){tab=t;R();scrollTo(0,0)}
 function qa(t){fm={type:t};go('add')}
@@ -284,7 +284,7 @@ async function lo(){if(U&&S.ut){try{await FS.doc('users/'+U.uid).set(snap())}cat
 const legacy=()=>{try{return JSON.parse(localStorage.getItem('mp_v1'))}catch(e){return null}};
 const askImport=n=>new Promise(r=>{window.imp=r;A(`<div class="lw2"><div class="lp" style="padding-top:70px"><h2 class="wb">Données trouvées</h2><div class="mu" style="margin-bottom:16px">Cet appareil contient ${n} transaction(s). Les importer dans ce compte ?</div><button class="b lb" onclick="imp(1)">Oui, importer</button><button class="b s gb" onclick="imp(0)" style="margin-top:10px">Non, commencer à zéro</button></div></div>`,1)});
 async function onUser(u){
- if(!u){U=null;K='mp_v1';S=DEF();showAuth();return}
+ if(!u){U=null;K='mp_v1';S=DEF();try{S.theme=localStorage.getItem('mp_theme')||'dark'}catch(e){}applyTheme();showAuth();return}
  U=u;K='mp_u_'+u.uid;S=DEF();S.theme='dark';S.tv=1;
  try{const r=localStorage.getItem(K);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
  try{
@@ -297,6 +297,7 @@ async function onUser(u){
   CS='ok'}catch(e){CS='err'}
  hideAuth();applyTheme();R();lk();upd()}
 if(!S.tv){S.theme='dark';S.tv=1;save(1)}
+try{const t=localStorage.getItem('mp_theme');if(t)S.theme=t}catch(e){}
 applyTheme();$('#bg').innerHTML=makeBG();
 if(fbOn()){$('#app').innerHTML='<h1 style="text-align:center;margin-top:30vh">⏳</h1>';firebase.initializeApp(FB);FS=firebase.firestore();firebase.auth().onAuthStateChanged(onUser)}else{R();lk()}
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
